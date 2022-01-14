@@ -1,0 +1,111 @@
+﻿@page "/"
+
+@using CrudMUDBLAZOR.Data
+@inject CrudMUDBLAZOR.IServices.IStudentServices studentservices
+@inject MudBlazor.ISnackbar Snackbar
+
+
+<input type="hidden" @bind-value="student.Id" />
+<MudTextField @bind-Value="student.Name" Label="Student Name" Variant="Variant.Text" Margin="Margin.Dense"></MudTextField>
+<MudTextField @bind-Value="student.Emial" Label="Email" Variant="Variant.Text" Margin="Margin.Dense"></MudTextField>
+<MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Save">Save</MudButton>
+
+
+<hr />
+
+
+<MudTable Items="@GetStudents()" Dense="@dense" Hover="@hover" Filter="new Func<StudentModel, bool>(FilterFunc)" @bind-Student="student">
+    <ToolBarContent>
+        <MudText Typo ="Typo.h6">Periodic Student</MudText>      
+         <MudToolBarSpacer/>
+         <MudTextField @bind-Value="searchstring" Placeholder="Search for Students..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>StudentID</MudTh>
+        <MudTh>Student Name</MudTh>
+        <MudTh>Student Email</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="StudentID">@context.Id</MudTd>
+        <MudTd DataLabel="StudentID">@context.Name</MudTd>
+         <MudTd DataLabel="StudentID">@context.Emial</MudTd>
+        <MudTd>
+            <MudFab @onclick="@(()=>Edit(@context.Id))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small"/>
+            <MudFab @onclick="@(()=>Delete(@context.Id))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small"/>
+        </MudTd>
+    </RowTemplate>
+   <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 5,10,20,50}" />
+    </PagerContent>
+</MudTable>
+<MudSwitch @bind-Checked="@hover" Color="Color.Primary">Hover</MudSwitch>
+<MudSwitch @bind-Checked="@dense" Color="Color.Secondary">Dense</MudSwitch>
+<MudText Inline="true">Selected: @student?.Name</MudText>
+
+
+@code{
+    private bool dense = true;
+    private bool hover = true;
+    private string searchstring = "";
+
+
+    private StudentModel student = new StudentModel();
+
+    private List<StudentModel> students = new List<StudentModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetStudents();
+    }
+
+    private IList<StudentModel> GetStudents()
+    {
+        students = studentservices.GetStudent();
+        return students;
+
+    }
+
+    private bool FilterFunc(StudentModel student)
+    {
+        if (string.IsNullOrWhiteSpace(searchstring)) return true;
+        if (student.Name.Contains(searchstring, StringComparison.OrdinalIgnoreCase)) return true;
+        if (student.Emial.Contains(searchstring, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+    private void Save()
+    {
+        
+        if(student.Id == 0)
+        {
+            studentservices.SaveOrUpdate(student);
+            student = new StudentModel();
+            Snackbar.Add("Student Saved Successfully", Severity.Success);
+            GetStudents();
+        }
+        else
+        {
+            studentservices.SaveOrUpdate(student);
+            student = new StudentModel();
+            Snackbar.Add("Student Update Successfully", Severity.Success);
+            GetStudents();
+        }    
+        
+    }
+
+
+    private void Edit(int studentId)
+    {
+        student = studentservices.GetByID(studentId);
+
+    }
+
+    private void Delete(int studentId)
+    {
+        studentservices.Delete(studentId);
+        students.RemoveAll(x => x.Id == studentId);
+        Snackbar.Add("Student Deleted", Severity.Warning);
+        GetStudents();
+    }
+
+}
